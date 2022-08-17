@@ -1,35 +1,64 @@
-const express = require('express');
+const express  = require("express");
 
 const app = express();
 
-app.listen(59296);
-const server = app.listen(() => {
-    console.log(`Server started successfully on port number ${server.address().port}`);
+const bodyParser = require("body-parser");
+
+app.use(bodyParser.json());
+
+const chocolates = [ {
+    name: "kitkat",
+    amount: 4,
+    cost: 2.50
+}];
+
+app.get("/hello", (req, res) => {
+    return res.send("Welcome to Chocolate World!");
 });
 
-app.get('/', (req, res) => res.send('Hello, my name is mohamed!'));
-
-let names = ['Mohamed', 'Daniel', 'Faizaan', 'Khaleeq'];
-
-app.get('/getAll', (req, res) => res.send(names));
-
-app.get('/get/:id', (req, res) => res.send(names['req.params.id']));
-
-app.get('/delete/:id', (req, res) => {
-    res.send(names.splice(req.params.id, 1));
-});
-app.use(express.json());    //Put BEFORE request handling
-
-app.post('/create', (req, res) => {
-    const name = req.body.name;
-    names.push(name);
-    res.status(201).send(`${name} added successfully`);
+app.post("/createChocolate", (req, res, next) => {
+    console.log("BODY:", req.body);
+    chocolates.push(req.body);
+    return res.status(201).send(chocolates[chocolates.length - 1]);
 });
 
-app.post('/replace/:index', (req, res) => {
-    const name = req.query.name;
-    const index = req.params.index;
-    const old = names[index];
-    names[index] = name;
-    res.status(202).send(`${old} successfully replaced with ${name}`);
+app.get("/getAllChocolates", (req, res) => {
+    return res.json(chocolates);
+});
+
+app.get("/getChocolate/:id", (req, res, next) => {
+    console.log("PARAMS", req.params);
+    const {id} = req.params;
+    return res.json(chocolates[id]);
+});
+
+app.patch("/updateChocolate/:id", (req, res) => {
+    console.log("PARAMS", req.params);
+    console.log("QUERY:", req.query);
+    const { name, cost, amount} = req.query;
+    const { id } = req.params;
+    const chocolateToUpdate = chocolates[req.params.id];
+    
+    if (name) chocolateToUpdate.name = chocolateToUpdate.name;
+    if (cost !== null && cost !== undefined) chocolateToUpdate.cost = cost;
+    if (amount !== null && amount !== undefined) chocolateToUpdate.amount = amount;
+
+    return res.json(chocolates[id]);
+});
+
+
+app.delete("/removeChocolate/:id", (req, res) => {
+    console.log("PARAMS:", req.params);
+    chocolates.splice(req.params.id);
+    return res.status(204).send();
+});
+
+app.use("*", (req, res, next) => next({status: 404, message: "Incorrect URL"}));
+
+app.use((err, req, res, next) => {
+    return res.status(err.status || 500).send(err.message || err);
+})
+
+const server = app.listen(4494, () => {
+    console.log(`Server started on port ${server.address().port}`);
 });
