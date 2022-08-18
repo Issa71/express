@@ -1,41 +1,38 @@
 const router = require('express').Router();
 
-const chocolates = [{
-  name: 'kitkat',
-  amount: 4,
-  cost: 2.50,
-}];
+const Chocolate = require('../db').chocolate;
+
 router.post('/createChocolate', (req, res, next) => {
   console.log('BODY:', req.body);
-  chocolates.push(req.body);
-  return res.status(201).send(chocolates[chocolates.length - 1]);
+  if (!req.body || Object.keys(req.body).length < 1) return next({ status: 400, message: 'No body' });
+
+  Chocolate.create(req.body)
+    .then((result) => res.status(201).json(result))
+    .catch((err) => next(err));
 });
 
-router.get('/getAllChocolates', (req, res) => res.json(chocolates));
+router.get('/getAllChocolates', (req, res, next) => {
+  Chocolate.find().then((results) => res.json(results)).catch((err) => next(err));
+});
 
 router.get('/getChocolate/:id', (req, res, next) => {
   console.log('PARAMS', req.params);
   const { id } = req.params;
-  return res.json(chocolates[id]);
+  if (id === null || id === undefined) return next({ status: 400, msg: 'Bad Request' });
+  Chocolate.findById(id).then((result) => res.json(result)).catch((err) => next(err));
 });
 
-router.patch('/updateChocolate/:id', (req, res) => {
+router.patch('/updateChocolate/:id', (req, res, next) => {
   console.log('PARAMS', req.params);
   console.log('QUERY:', req.query);
-  const { name, cost, amount } = req.query;
   const { id } = req.params;
-  const chocolateToUpdate = chocolates[req.params.id];
-
-  if (name) chocolateToUpdate.name = chocolateToUpdate.name;
-  if (cost !== null && cost !== undefined) chocolateToUpdate.cost = cost;
-  if (amount !== null && amount !== undefined) chocolateToUpdate.amount = amount;
-
-  return res.json(chocolates[id]);
+  const rq = req.query;
+  Chocolate.findByIdAndUpdate(id, rq).then((result) => res.json(result)).catch((e) => next(e));
 });
 
-router.delete('/removeChocolate/:id', (req, res) => {
+router.delete('/removeChocolate/:id', (req, res, next) => {
   console.log('PARAMS:', req.params);
-  chocolates.splice(req.params.id);
-  return res.status(204).send();
+  const rq = req.query;
+  Chocolate.findByIdAndDelete(rq.id).then(() => res.status(204).send()).catch((e) => next(e));
 });
 module.exports = router;
